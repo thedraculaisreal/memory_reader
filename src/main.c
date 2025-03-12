@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
         char line[256];        
         // we use fgets here because it stops at a new line allowing us to easilty parse maps                
         int value;
+        char value_in_hex[50];
         char value_dec[50];        
         printf("What value do you wish to search for?: ");
         if (int32) {            
@@ -51,25 +52,29 @@ int main(int argc, char **argv) {
                 printf("Memory region not readable.");
                 continue;
             }
-            // this is hard coded for now
-            if (start_address != 0x3e013000) {
-                continue;
-            }
+            if (start_address != 0x02e8c000) continue;
+            // this is hard coded for now            
             size_t size = end_address - start_address;            
             char *memory_buffer = read_file_into_mem(mem_file_path, start_address, size);
             size_t match = 0;
             unsigned long *match_addresses = NULL;
             if (first_run) {
-                for (size_t i = 0; i < size; i += byte_length) {                                
-                    char new_buffer[byte_length + 1];
+                for (size_t i = 0; i < size; ++i) {                                
+                    char new_buffer[byte_length + 1];                    
                     new_buffer[byte_length] = '\0';
-                    memcpy(new_buffer, &memory_buffer[i], byte_length);               
-                    int num = atoi(new_buffer);                
+                    memcpy(new_buffer, &memory_buffer[i], byte_length);                    
+                    /*if (start_address + i != 0x2ea9b60) {
+                        continue;
+                    }*/                   
+                    char new_buffer1[10] = "";
+                    for (size_t j = 0; j < strlen(new_buffer); ++j) {
+                        char num_buffer[1];
+                        sprintf(num_buffer, "%d", new_buffer[j]);
+                        strcat(new_buffer1, num_buffer);                        
+                    }
+                    int num = atoi(new_buffer1);                    
                     if (num == value) {                    
-                        printf("0x%08lx    ", start_address + i);                    
-                        for (size_t j = 0; j < strlen(new_buffer); ++j) {                    
-                            printf("%02x", new_buffer[j]);                        
-                        }
+                        printf("0x%08lx    ", start_address + i);                                            
                         printf("|%d\n", num);
                         match_addresses = (unsigned long *)realloc(match_addresses, sizeof(unsigned long) * (match + 1));
                         match_addresses[match] = i;
@@ -80,16 +85,19 @@ int main(int argc, char **argv) {
                 for (size_t i = 0; i < address_count; ++i) {                                
                     char new_buffer[byte_length + 1];
                     new_buffer[byte_length] = '\0';
-                    memcpy(new_buffer, &memory_buffer[addresses[i]], byte_length);                    
-                    int num = atoi(new_buffer);                
+                    memcpy(new_buffer, &memory_buffer[addresses[i]], byte_length);
+                    char new_buffer1[10] = "";
+                    for (size_t j = 0; j < strlen(new_buffer); ++j) {
+                        char num_buffer[1];
+                        sprintf(num_buffer, "%d", new_buffer[j]);
+                        strcat(new_buffer1, num_buffer);                        
+                    }
+                    int num = atoi(new_buffer1);                    
                     if (num == value) {                    
-                        printf("0x%08lx    ", addresses[i] + start_address);                    
-                        for (size_t j = 0; j < strlen(new_buffer); ++j) {                    
-                            printf("%02x", new_buffer[j]);                        
-                        }
+                        printf("0x%08lx    ", addresses[i] + start_address);                                            
                         printf("|%d\n", num);
                         match_addresses = (unsigned long *)realloc(match_addresses, sizeof(unsigned long) * (match + 1));
-                        match_addresses[match] = i;
+                        match_addresses[match] = addresses[i];
                         match++;
                     }                
                 }
@@ -98,8 +106,15 @@ int main(int argc, char **argv) {
             free(memory_buffer);            
             addresses = match_addresses;            
             address_count = match;
+            for (size_t i = 0; i < address_count; ++i) {
+                printf("0x%08lx\n", addresses[i] + start_address);
+            }
             first_run = false;
         }
     }        
     return 0;
+}
+
+void convert_to_decimal() {
+    
 }
