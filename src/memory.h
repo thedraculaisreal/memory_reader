@@ -26,7 +26,8 @@ typedef struct {
     size_t count;
 } SavedAddresses;
 
-void search_mem_all(const char *mem_file_path, AllAddresses *addresses, SavedAddresses *saved_addresses, Type type);
-void search_mem_all_repeat(const char *mem_file_path, AllAddresses *addresses, SavedAddresses *old_addresses, SavedAddresses *saved_addresses, Type type);
+void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses *saved_addresses, Type type);
+void search_mem_all_repeat(char *mem_file_path, AllAddresses *addresses, SavedAddresses *old_addresses, SavedAddresses *saved_addresses, Type type);
 size_t read_maps(FILE *maps_fd, AddressPair **addresses);
+size_t find_pid(char *process_name);
 #endif // MEMORY_H

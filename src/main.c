@@ -8,32 +8,32 @@
 #define CHUNK_SIZE 16
 #define PAGE_SIZE 4096
 
-void setup_files(FILE **maps_fd, char *argv1);
-void search_mem(char *argv1);
+void setup_files(FILE **maps_fd, size_t pid);
+void search_mem(size_t pid);
 
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        fprintf(stderr, "ERROR: %s <pid>", argv[0]);
-        return 1;
-    }
-    search_mem(argv[1]);            
+int main() {
+    // change this to whatever process you want to search name, use ps -e to find process name / pid
+    char *process_name = "linux_64_client";
+    size_t pid = find_pid(process_name);
+    printf("Found PID -> %zu\n", pid);
+    search_mem(pid);            
     return 0;
 }
 
-void setup_files(FILE **maps_fd, char *argv1) {
+void setup_files(FILE **maps_fd, size_t pid) {
     char maps_file_path[256];    
-    sprintf(maps_file_path, "/proc/%s/maps", argv1);    
+    sprintf(maps_file_path, "/proc/%zu/maps", pid);    
     (*maps_fd) = fopen(maps_file_path, "r");
 }
 
 SavedAddresses saved_addresses;
 Type type;
 
-void search_mem(char *argv1) {
+void search_mem(size_t pid) {
     bool first_run = true;
     while (true) {
         if (first_run) {
-            char buffer[6];        
+            char buffer[6];            
             printf("What do you want to search for?(int32, f32): ");
             scanf("%s", buffer);        
             if (strcmp(buffer, "int32") == 0) {
@@ -44,7 +44,7 @@ void search_mem(char *argv1) {
         AllAddresses all_addresses;
         AddressPair *address_pairs = NULL;
         FILE *maps_fd;
-        setup_files(&maps_fd, argv1);    
+        setup_files(&maps_fd, pid);    
         char value_dec[50];        
         printf("What value do you wish to search for?: ");
         if (type.int32) {
@@ -61,7 +61,7 @@ void search_mem(char *argv1) {
         match_addresses.addresses = NULL;
         match_addresses.count = 0;
         char mem_file_path[256];
-        sprintf(mem_file_path, "/proc/%s/mem", argv1);
+        sprintf(mem_file_path, "/proc/%zu/mem", pid);
         if (first_run) {
             search_mem_all(mem_file_path, &all_addresses, &match_addresses, type);
             first_run = false;

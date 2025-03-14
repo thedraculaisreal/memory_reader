@@ -8,16 +8,15 @@
 char* read_file_into_mem(const char *file_path) {
     int ret;
     FILE *fd = fopen(file_path, "r");
-    if (!fd) {
-        perror("fopen");
-        return false;
+    if (!fd) {        
+        return NULL;
     }
     
     // place position at end of file to get byte offset for buffer size
     ret = fseek(fd, 0L, SEEK_END);
     if (ret < 0) {
         perror("fseek");
-        return false;
+        return NULL;
     }
     
     long buffer_size = ftell(fd);
@@ -31,14 +30,14 @@ char* read_file_into_mem(const char *file_path) {
     ret = fseek(fd, 0L, SEEK_SET);
     if (ret < 0) {
         perror("fseek");
-        return false;
+        return NULL;
     }
     
     ret = fread(buffer, sizeof(char), buffer_size, fd);
     
     if (ferror(fd) != 0) {
         perror("Error reading file");
-        return false;
+        return NULL;
     } else {
         // not sure if you need to do this but always good practice to null terminate c strings.
         buffer[buffer_size + 1] = '\0';
@@ -52,22 +51,22 @@ char* read_file_at_index(const char *file_path, unsigned long start_address, siz
     int ret;
     int fd = open(file_path, O_RDONLY);
     if (!fd) {
-        perror("open");
-        return false;
+        //perror("open");
+        return NULL;
     }
     char* buffer = (char *)malloc(size);
     // place position at end of file to get byte offset for buffer size
     if (lseek(fd, start_address, SEEK_SET) == -1) {
-        perror("lseek");
+        //perror("lseek");
         free(buffer);
-        return false;
+        return NULL;
     }
         
     ret = read(fd, buffer, size);
     if (ret <= 0) {
         free(buffer);
-        perror("read");
-        return false;
+        //perror("read");
+        return NULL;
     }
         
     return buffer;

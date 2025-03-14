@@ -3,10 +3,13 @@
 #include <string.h>
 #include <stdbool.h>
 
+// cat /proc/sys/kernel/pid_max
+#define MAXIMUM_PID 4194304
+
 #include "file_reading.h"
 #include "memory.h"
 
-void search_mem_all(const char *mem_file_path, AllAddresses *addresses, SavedAddresses *saved_addresses, Type type) {
+void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses *saved_addresses, Type type) {
     for (size_t i = 0; i < addresses->count; ++i) {        
         unsigned long start_address = addresses->address_pairs[i].start_address;
         unsigned long end_address = addresses->address_pairs[i].end_address;
@@ -40,7 +43,7 @@ void search_mem_all(const char *mem_file_path, AllAddresses *addresses, SavedAdd
     
 }
 
-void search_mem_all_repeat(const char *mem_file_path, AllAddresses *addresses, SavedAddresses *old_addresses, SavedAddresses *saved_addresses, Type type) {
+void search_mem_all_repeat(char *mem_file_path, AllAddresses *addresses, SavedAddresses *old_addresses, SavedAddresses *saved_addresses, Type type) {
     for (size_t i = 0; i < addresses->count; ++i) {        
         unsigned long start_address = addresses->address_pairs[i].start_address;
         unsigned long end_address = addresses->address_pairs[i].end_address;
@@ -96,4 +99,26 @@ size_t read_maps(FILE *maps_fd, AddressPair **addresses) {
         index++;
     }
     return index;
+}
+
+size_t find_pid(char *process_name) {
+    for (size_t i = 0; i < MAXIMUM_PID; ++i) {
+        char stat_file_path[256];    
+        sprintf(stat_file_path, "/proc/%zu/stat", i);        
+        char *buffer = read_file_at_index(stat_file_path, 0, 50);        
+        if (!buffer) {            
+            continue;
+        }        
+        for (size_t j = 0; j < strlen(buffer); ++j) {
+            if (buffer[j] == '(') {                
+                char new_buffer[strlen(process_name) + 1];
+                new_buffer[strlen(process_name)] = '\0';
+                memcpy(new_buffer, &buffer[j + 1], strlen(process_name));                
+                if (strncmp(process_name, new_buffer, strlen(process_name)) == 0) {
+                    return i;
+                }
+            }
+        }
+    }
+    return 0;
 }
