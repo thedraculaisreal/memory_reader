@@ -51,13 +51,13 @@ char* read_file_at_index(const char *file_path, unsigned long start_address, siz
     int ret;
     int fd = open(file_path, O_RDONLY);
     if (!fd) {
-        //perror("open");
+        perror("open");
         return NULL;
     }
     char* buffer = (char *)malloc(size);
     // place position at end of file to get byte offset for buffer size
     if (lseek(fd, start_address, SEEK_SET) == -1) {
-        //perror("lseek");
+        perror("lseek");
         free(buffer);
         return NULL;
     }
@@ -65,9 +65,9 @@ char* read_file_at_index(const char *file_path, unsigned long start_address, siz
     ret = read(fd, buffer, size);
     if (ret <= 0) {
         free(buffer);
-        //perror("read");
+        perror("read");
         return NULL;
     }
-        
+    close(fd);    
     return buffer;
 }

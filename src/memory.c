@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 // cat /proc/sys/kernel/pid_max
 #define MAXIMUM_PID 4194304
@@ -9,7 +11,7 @@
 #include "file_reading.h"
 #include "memory.h"
 
-void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses *saved_addresses, Type type) {
+void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses *saved_addresses, Type type) {    
     for (size_t i = 0; i < addresses->count; ++i) {        
         unsigned long start_address = addresses->address_pairs[i].start_address;
         unsigned long end_address = addresses->address_pairs[i].end_address;
@@ -22,15 +24,15 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
             char new_buffer1[10] = "";            
             if (type.int32) {
                 int value = *(int*)type.value;
-                for (size_t k = 0; k < strlen(new_buffer); ++k) {                  
+                for (size_t k = 0; k < strlen(new_buffer); ++k) {
                     char num_buffer[2];
                     sprintf(num_buffer, "%d", new_buffer[k]);
-                    strcat(new_buffer1, num_buffer);                    
-                }                
-                int num = atoi(new_buffer1);
+                    strcat(new_buffer1, num_buffer);                        
+                }
+                int num = atoi(new_buffer1);                                
                 if (num == value) {                    
                     printf("0x%08lx    ", j + start_address);                                            
-                    printf("|%d\n", num);
+                    printf("|%d\n", num);                    
                     (*saved_addresses).addresses = (unsigned long *)realloc((*saved_addresses).addresses, sizeof(unsigned long) * ((*saved_addresses).count + 1));
                     (*saved_addresses).addresses[(*saved_addresses).count] = j + start_address;
                     (*saved_addresses).count++;                    
@@ -105,20 +107,21 @@ size_t find_pid(char *process_name) {
     for (size_t i = 0; i < MAXIMUM_PID; ++i) {
         char stat_file_path[256];    
         sprintf(stat_file_path, "/proc/%zu/stat", i);        
-        char *buffer = read_file_at_index(stat_file_path, 0, 50);        
-        if (!buffer) {            
-            continue;
-        }        
-        for (size_t j = 0; j < strlen(buffer); ++j) {
-            if (buffer[j] == '(') {                
-                char new_buffer[strlen(process_name) + 1];
-                new_buffer[strlen(process_name)] = '\0';
-                memcpy(new_buffer, &buffer[j + 1], strlen(process_name));                
-                if (strncmp(process_name, new_buffer, strlen(process_name)) == 0) {
-                    return i;
+        char buffer[50]; 
+        int fd = open(stat_file_path, O_RDONLY);
+        if (read(fd, buffer, sizeof(buffer)) >= 0) {                    
+            for (size_t j = 0; j < strlen(buffer); ++j) {
+                if (buffer[j] == '(') {                
+                    char new_buffer[strlen(process_name) + 1];
+                    new_buffer[strlen(process_name)] = '\0';
+                    memcpy(new_buffer, &buffer[j + 1], strlen(process_name));                               
+                    if (strcmp(process_name, new_buffer) == 0) {
+                        return i;
+                    }
                 }
-            }
+            } 
         }
+        close(fd);
     }
     return 0;
 }
