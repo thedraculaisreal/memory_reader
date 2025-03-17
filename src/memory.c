@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/uio.h>
 #include <fcntl.h>
 
 // cat /proc/sys/kernel/pid_max
@@ -10,6 +12,8 @@
 
 #include "file_reading.h"
 #include "memory.h"
+
+unsigned long heap_start_address;
 
 void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses *saved_addresses, Type type) {    
     for (size_t i = 0; i < addresses->count; ++i) {        
@@ -94,13 +98,35 @@ size_t read_maps(FILE *maps_fd, AddressPair **addresses) {
         if (perms[0] != 'r') {
             printf("Memory region not readable.");
             continue;
-        }
+        }        
         // add to hashmap of addresses
         (*addresses) = (AddressPair *)realloc((*addresses), sizeof(AddressPair) * (index + 1));
         (*addresses)[index] = address_pair;
         index++;
     }
     return index;
+}
+
+void find_heap(FILE *maps_fd) {
+    char line[256];
+    size_t index = 0;
+    while (fgets(line, 256, maps_fd)) {        
+        AddressPair address_pair;               
+        char perms[5];
+        sscanf(line, "%08lx-%08lx %4s", &address_pair.start_address, &address_pair.end_address, perms);
+        if (address_pair.start_address != 0x1dffe000) {
+            continue;
+        }
+        if (perms[0] != 'r') {
+            printf("Memory region not readable.");
+            continue;
+        }
+        printf("Checking if contains heap!!\n");        
+        if (contains_heap(line)) {
+            heap_start_address = address_pair.start_address;            
+            printf("Found heap %ld\n", heap_start_address);            
+        }        
+    }    
 }
 
 size_t find_pid(char *process_name) {
@@ -124,4 +150,36 @@ size_t find_pid(char *process_name) {
         close(fd);
     }
     return 0;
+}
+
+bool contains_heap(char *line) {
+    char *heap_name = "heap";
+    for (size_t i = 0; i < strlen(line); ++i) {
+        char buffer[strlen(heap_name) + 1];
+        memcpy(buffer, &line[i], strlen(heap_name));
+        buffer[strlen(heap_name)] = '\0';        
+        if (strcmp(buffer, heap_name) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void read_memory_address(size_t old_pid, unsigned long address) {
+    int value;
+    size_t size_of_buffer = sizeof(value);
+    pid_t pid = (pid_t)old_pid;
+    struct iovec local[1];
+    struct iovec remote[1];
+    ssize_t nread;
+
+    local[0].iov_base = &value;
+    local[0].iov_len = size_of_buffer;
+    remote[0].iov_base = (void *) address;
+    remote[0].iov_len = size_of_buffer;
+    nread = process_vm_readv(pid, local, 1, remote, 1, 0);
+    if (nread != size_of_buffer) {
+        exit(1);
+    }
+    printf("%d\n", value);
 }

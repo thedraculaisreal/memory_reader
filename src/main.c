@@ -11,11 +11,13 @@
 void setup_files(FILE **maps_fd, size_t pid);
 void search_mem(size_t pid);
 
+
 int main() {
     // change this to whatever process you want to search name, use ps -e to find process name / pid
     char *process_name = "linux_64_client";
     size_t pid = find_pid(process_name);
     printf("Found PID -> %zu\n", pid);
+    //read_memory_address(pid, 0x1e01bb60);
     search_mem(pid);            
     return 0;
 }
@@ -44,7 +46,9 @@ void search_mem(size_t pid) {
         AllAddresses all_addresses;
         AddressPair *address_pairs = NULL;
         FILE *maps_fd;
-        setup_files(&maps_fd, pid);    
+        setup_files(&maps_fd, pid);
+        // testing
+        find_heap(maps_fd);
         char value_dec[50];        
         printf("What value do you wish to search for?: ");
         if (type.int32) {
