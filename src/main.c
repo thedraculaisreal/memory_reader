@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include "file_reading.h"
 #include "memory.h"
 
@@ -15,8 +16,17 @@ int main() {
     // change this to whatever process you want to search name, use ps -e to find process name / pid
     char *process_name = "linux_64_client";
     size_t pid = find_pid(process_name);
-    printf("Found PID -> %zu\n", pid);    
-    search_mem(pid);            
+    printf("Found PID -> %zu\n", pid);
+    FILE *maps_fd;
+    setup_files(&maps_fd, pid);    
+    find_heap(maps_fd);
+    char mem_file_path[256];
+    sprintf(mem_file_path, "/proc/%zu/mem", pid);
+    while (true) {
+        find_health(mem_file_path);
+        sleep(1);
+    }       
+    //search_mem(pid);            
     return 0;
 }
 
@@ -61,20 +71,16 @@ void search_mem(size_t pid) {
         FILE *maps_fd;
         setup_files(&maps_fd, pid);
         // testing
-        find_heap(maps_fd);
-        char value_dec[50];
+        find_heap(maps_fd);        
         if (!type.unsigned_long) {
             printf("What value do you wish to search for?: ");
             if (type.int32) {
                 type.value = malloc(sizeof(int));
-                scanf("%d", type.value);
-                sprintf(value_dec ,"%d", *(int*)type.value);        
+                scanf("%d", type.value);                
             } else if (type.f32) {            
                 type.value = malloc(sizeof(double));
-                scanf("%lf", type.value);
-                sprintf(value_dec ,"%lf", *(double*)type.value);        
-            }
-            type.length = strlen(value_dec);
+                scanf("%lf", type.value);                
+            }            
         }                
         all_addresses.count = read_maps(maps_fd, &address_pairs);
         all_addresses.address_pairs = address_pairs;
@@ -82,7 +88,7 @@ void search_mem(size_t pid) {
         match_addresses.addresses = NULL;
         match_addresses.count = 0;
         char mem_file_path[256];
-        sprintf(mem_file_path, "/proc/%zu/mem", pid);
+        sprintf(mem_file_path, "/proc/%zu/mem", pid);       
         if (first_run) {
             search_mem_all(mem_file_path, &all_addresses, &match_addresses, type);
             first_run = false;
@@ -91,7 +97,7 @@ void search_mem(size_t pid) {
             free(saved_addresses.addresses);
         }        
         saved_addresses.addresses = match_addresses.addresses;
-        saved_addresses.count = match_addresses.count;
+        saved_addresses.count = match_addresses.count;*/
     }    
 }
 

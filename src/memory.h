@@ -8,7 +8,6 @@ typedef struct {
     bool int32;
     bool f32;
     bool unsigned_long;
-    size_t length;
     void *value;
 } Type;
 
@@ -35,4 +34,5 @@ size_t find_pid(char *process_name);
 void* read_memory_address(size_t old_pid, unsigned long address);
 bool contains_heap(char *line);
 void find_heap(FILE *maps_fd);
+void find_health(char *mem_file_path);
 #endif // MEMORY_H
