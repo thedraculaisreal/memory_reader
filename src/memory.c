@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -21,32 +22,51 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
         unsigned long end_address = addresses->address_pairs[i].end_address;
         size_t size = end_address - start_address;
         char *memory_buffer = read_file_at_index(mem_file_path, start_address, size);
-        for (size_t j = 0; j < size; ++j) {                                
-            char new_buffer[type.length + 1];                    
-            new_buffer[type.length] = '\0';
-            memcpy(new_buffer, &memory_buffer[j], type.length);                                               
-            char new_buffer1[10] = "";            
-            if (type.int32) {
-                int value = *(int*)type.value;
-                for (size_t k = 0; k < strlen(new_buffer); ++k) {
-                    char num_buffer[2];
-                    sprintf(num_buffer, "%d", new_buffer[k]);
-                    strcat(new_buffer1, num_buffer);                        
-                }
-                int num = atoi(new_buffer1);                                
-                if (num == value) {                    
-                    printf("0x%08lx    ", j + start_address);                                            
-                    printf("|%d\n", num);                    
-                    (*saved_addresses).addresses = (unsigned long *)realloc((*saved_addresses).addresses, sizeof(unsigned long) * ((*saved_addresses).count + 1));
-                    (*saved_addresses).addresses[(*saved_addresses).count] = j + start_address;
-                    (*saved_addresses).count++;                    
-                }
-            } else if (type.f32) {
-                return;
-            }                
-        }
-    }
-    
+        printf("Hello");
+        if (!type.unsigned_long) {
+            for (size_t j = 0; j < size; ++j) {                                
+                char new_buffer[type.length + 1];                    
+                new_buffer[type.length] = '\0';
+                memcpy(new_buffer, &memory_buffer[j], type.length);                                               
+                char new_buffer1[10] = "";            
+                if (type.int32) {
+                    int value = *(int*)type.value;
+                    for (size_t k = 0; k < strlen(new_buffer); ++k) {
+                        char num_buffer[2];
+                        sprintf(num_buffer, "%d", new_buffer[k]);
+                        strcat(new_buffer1, num_buffer);                        
+                    }
+                    int num = atoi(new_buffer1);                                
+                    if (num == value) {                    
+                        printf("0x%08lx    ", j + start_address);                                            
+                        printf("|%d\n", num);                    
+                        (*saved_addresses).addresses = (unsigned long *)realloc((*saved_addresses).addresses, sizeof(unsigned long) * ((*saved_addresses).count + 1));
+                        (*saved_addresses).addresses[(*saved_addresses).count] = j + start_address;
+                        (*saved_addresses).count++;                    
+                    }
+                } else if (type.f32) {
+                    return;
+                }                
+            }
+        } else {
+            unsigned long address = *(unsigned long*)type.value;
+            if (address > start_address && address < end_address) {
+                char new_buffer[5];                    
+                new_buffer[5] = '\0';
+                memcpy(new_buffer, &memory_buffer[address - start_address], 4);                                               
+                char new_buffer1[10] = "";            
+                if (type.int32) {                    
+                    for (size_t k = 0; k < strlen(new_buffer); ++k) {
+                        char num_buffer[2];
+                        sprintf(num_buffer, "%d", new_buffer[k]);
+                        strcat(new_buffer1, num_buffer);                        
+                    }
+                    int num = atoi(new_buffer1);
+                    printf("0x%08lx    %d\n", address, num);
+                }    
+            }
+        }        
+    }    
 }
 
 void search_mem_all_repeat(char *mem_file_path, AllAddresses *addresses, SavedAddresses *old_addresses, SavedAddresses *saved_addresses, Type type) {
@@ -113,18 +133,14 @@ void find_heap(FILE *maps_fd) {
     while (fgets(line, 256, maps_fd)) {        
         AddressPair address_pair;               
         char perms[5];
-        sscanf(line, "%08lx-%08lx %4s", &address_pair.start_address, &address_pair.end_address, perms);
-        if (address_pair.start_address != 0x1dffe000) {
-            continue;
-        }
+        sscanf(line, "%08lx-%08lx %4s", &address_pair.start_address, &address_pair.end_address, perms);        
         if (perms[0] != 'r') {
             printf("Memory region not readable.");
             continue;
-        }
-        printf("Checking if contains heap!!\n");        
+        }        
         if (contains_heap(line)) {
             heap_start_address = address_pair.start_address;            
-            printf("Found heap %ld\n", heap_start_address);            
+            printf("Found heap 0x%08lx\n", heap_start_address);            
         }        
     }    
 }
@@ -165,7 +181,7 @@ bool contains_heap(char *line) {
     return false;
 }
 
-void read_memory_address(size_t old_pid, unsigned long address) {
+void* read_memory_address(size_t old_pid, unsigned long address) {
     int value;
     size_t size_of_buffer = sizeof(value);
     pid_t pid = (pid_t)old_pid;
@@ -179,7 +195,10 @@ void read_memory_address(size_t old_pid, unsigned long address) {
     remote[0].iov_len = size_of_buffer;
     nread = process_vm_readv(pid, local, 1, remote, 1, 0);
     if (nread != size_of_buffer) {
-        exit(1);
+        printf("Failed process_vm_read");
+        return NULL;
     }
-    printf("%d\n", value);
+    int* place_holder = malloc(sizeof(int));    
+    *place_holder = value; 
+    return (void*)place_holder; 
 }

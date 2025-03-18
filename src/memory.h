@@ -7,6 +7,7 @@
 typedef struct {
     bool int32;
     bool f32;
+    bool unsigned_long;
     size_t length;
     void *value;
 } Type;
@@ -28,9 +29,10 @@ typedef struct {
 
 void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses *saved_addresses, Type type);
 void search_mem_all_repeat(char *mem_file_path, AllAddresses *addresses, SavedAddresses *old_addresses, SavedAddresses *saved_addresses, Type type);
+void new_search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses *saved_addresses, Type type, size_t pid);
 size_t read_maps(FILE *maps_fd, AddressPair **addresses);
 size_t find_pid(char *process_name);
-void read_memory_address(size_t pid, unsigned long address);
+void* read_memory_address(size_t old_pid, unsigned long address);
 bool contains_heap(char *line);
 void find_heap(FILE *maps_fd);
 #endif // MEMORY_H
