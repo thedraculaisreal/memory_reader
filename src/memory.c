@@ -38,6 +38,17 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
                         (*saved_addresses).addresses[(*saved_addresses).count] = j + start_address;
                         (*saved_addresses).count++;                    
                     }
+                } else if (type.f32) {
+                    double num;
+                    memcpy(&num, &memory_buffer[j], sizeof(double));
+                    double value = *(double*)type.value;                
+                    if (num == value) {                    
+                        printf("0x%08lx    ", j + start_address);                                            
+                        printf("|%lf\n", num);                    
+                        (*saved_addresses).addresses = (unsigned long *)realloc((*saved_addresses).addresses, sizeof(unsigned long) * ((*saved_addresses).count + 1));
+                        (*saved_addresses).addresses[(*saved_addresses).count] = j + start_address;
+                        (*saved_addresses).count++;                    
+                    }
                 }                
             }
         }        
@@ -45,12 +56,64 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
             unsigned long address = *(unsigned long*)type.value;
             if (address > start_address && address < end_address) {                                
                 if (type.int32) {
-                    int num;
-                    memcpy(&num, &memory_buffer[address - start_address], sizeof(int)); 
-                    printf("0x%08lx    %d\n", address, num);
-                }    
+                    char buffer[10];
+                    printf("Do you want to examine memory around it?\n");
+                    scanf("%s", buffer);
+                    if (strcmp(buffer, "yes") == 0) {
+                        for (size_t j = (address - start_address) - 128; j < (address - start_address) + 128; ++j) {
+                            char buffer_num[sizeof(int) + 1];
+                            buffer_num[sizeof(int)] = '\0';
+                            int num;
+                            memcpy(&num, &memory_buffer[j], sizeof(int));
+                            memcpy(buffer_num, &memory_buffer[j], sizeof(int));
+                            if (address - start_address == j) {
+                                printf("----------------\n");
+                            }
+                            printf("0x%08lx |%d| ", j + start_address, num);
+                            for (size_t k = 0; k < strlen(buffer_num); ++k) {
+                                printf("%02X", buffer_num[k]);
+                            }
+                            printf("\n");
+                            if (address - start_address == j) {
+                                printf("----------------\n");
+                            }
+                        }
+                    } else {
+                        int num;
+                        memcpy(&num, &memory_buffer[address - start_address], sizeof(int));
+                        printf("0x%08lx  |%d\n", address, num);
+                    }                                       
+                } else if (type.f32) {
+                    char buffer[10];
+                    printf("Do you want to examine memory around it?\n");
+                    scanf("%s", buffer);
+                    if (strcmp(buffer, "yes") == 0) {
+                        for (size_t j = (address - start_address) - 128; j < (address - start_address) + 128; ++j) {
+                            char buffer_num[sizeof(double) + 1];
+                            buffer_num[sizeof(double)] = '\0';
+                            double num;
+                            memcpy(&num, &memory_buffer[j], sizeof(double));
+                            memcpy(buffer_num, &memory_buffer[j], sizeof(double));
+                            if (address - start_address == j) {
+                                printf("----------------\n");
+                            }                            
+                            printf("0x%08lx  |%lf", j + start_address, num);                            
+                            for (size_t k = 0; k < strlen(buffer_num); ++k) {
+                                printf("%02X", buffer_num[k]);
+                            }
+                            printf("\n");
+                            if (address - start_address == j) {
+                                printf("----------------\n");
+                            }
+                        }
+                    } else {
+                        double num;
+                        memcpy(&num, &memory_buffer[address - start_address], sizeof(double)); 
+                        printf("0x%08lx    %lf\n", address, num);
+                    }                    
+                }                
             }
-        }
+        } 
     }    
 }
 
@@ -74,14 +137,22 @@ void search_mem_all_repeat(char *mem_file_path, AllAddresses *addresses, SavedAd
                         (*saved_addresses).count++;
                     }
                 } else if (type.f32) {
-                    return;
+                    double num;
+                    memcpy(&num, &memory_buffer[old_addresses->addresses[j] - start_address], sizeof(double));
+                    double value = *(double*)type.value;
+                    if (num == value) {         
+                        printf("0x%08lx    ", old_addresses->addresses[j]);       
+                        printf("|%d\n", num);
+                        (*saved_addresses).addresses = (unsigned long *)realloc((*saved_addresses).addresses, sizeof(unsigned long) * ((*saved_addresses).count + 1));
+                        (*saved_addresses).addresses[(*saved_addresses).count] = old_addresses->addresses[j];
+                        (*saved_addresses).count++;
+                    }                    
                 }
             } else {
                 continue;
             }            
         }
-    }
-    
+    }    
 }
 
 size_t read_maps(FILE *maps_fd, AddressPair **addresses) {
@@ -163,28 +234,6 @@ bool contains_heap(char *line) {
     return false;
 }
 
-void* read_memory_address(size_t old_pid, unsigned long address) {
-    int value;
-    size_t size_of_buffer = sizeof(value);
-    pid_t pid = (pid_t)old_pid;
-    struct iovec local[1];
-    struct iovec remote[1];
-    ssize_t nread;
-
-    local[0].iov_base = &value;
-    local[0].iov_len = size_of_buffer;
-    remote[0].iov_base = (void *) address;
-    remote[0].iov_len = size_of_buffer;
-    nread = process_vm_readv(pid, local, 1, remote, 1, 0);
-    if (nread != size_of_buffer) {
-        printf("Failed process_vm_read");
-        return NULL;
-    }
-    int *place_holder = malloc(sizeof(int));    
-    *place_holder = value; 
-    return (void *)place_holder; 
-}
-
 void find_health(char *mem_file_path) {    
     size_t size = heap_end_address - heap_start_address;
     char *memory_buffer = read_file_at_index(mem_file_path, heap_start_address, size);
@@ -206,5 +255,3 @@ void find_health(char *mem_file_path) {
     }
     printf("Local_Player health = %d\n", health);
 }
-
-

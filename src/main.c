@@ -17,6 +17,12 @@ int main() {
     char *process_name = "linux_64_client";
     size_t pid = find_pid(process_name);
     printf("Found PID -> %zu\n", pid);
+    while (true) {
+        search_mem(pid);            
+    }    
+    return 0;
+}
+
     /*FILE *maps_fd;
     setup_files(&maps_fd, pid);    
     find_heap(maps_fd);
@@ -25,10 +31,7 @@ int main() {
     while (true) {
         find_health(mem_file_path);
         sleep(1);
-    }*/       
-    search_mem(pid);            
-    return 0;
-}
+    }*/
 
 void setup_files(FILE **maps_fd, size_t pid) {
     char maps_file_path[256];    
@@ -41,8 +44,7 @@ Type type;
 
 void search_mem(size_t pid) {
     bool first_run = true;
-    while (true) {
-        type.unsigned_long = false;        
+    while (true) {        
         if (first_run) {
             char buffer[10];                
             printf("Do you want to search for an address or a value? ");
@@ -51,19 +53,21 @@ void search_mem(size_t pid) {
                 type.unsigned_long = true;
                 type.value = malloc(sizeof(unsigned long));
                 printf("Enter address in hexadecimal: ");
-                scanf("%08lx", type.value);
-            }
+                scanf("%08lx", type.value);                
+            } else {
+                type.unsigned_long = false;
+            }            
             char new_buf[10];            
             printf("What do you want to search for?(int32, f32): ");
-            scanf("%s", new_buf);        
+            scanf("%s", new_buf);
             if (strcmp(new_buf, "int32") == 0) {
                 printf("int32 on\n");
-                type.int32 = true;
-                type.f32 = false;
-            } else if (strcmp(new_buf, "f32")) {
+                type.int32 = true;                
+                type.f32 = false;                
+            } else if (strcmp(new_buf, "f32") == 0) {
                 printf("f32 on\n");
-                type.f32 = true;
-                type.int32 = true;
+                type.f32 = true;                
+                type.int32 = false;                
             }
         }                
         AllAddresses all_addresses;
@@ -90,6 +94,9 @@ void search_mem(size_t pid) {
         if (first_run) {
             search_mem_all(mem_file_path, &all_addresses, &match_addresses, type);
             first_run = false;
+            if (type.unsigned_long) {
+                return;
+            }
         } else {
             search_mem_all_repeat(mem_file_path, &all_addresses, &saved_addresses, &match_addresses, type);
             free(saved_addresses.addresses);
