@@ -14,6 +14,8 @@ typedef struct {
     bool f32;
     bool unsigned_long;
     bool unknown;
+    bool lesser;
+    bool greater;
     void *value;
 } Type;
 

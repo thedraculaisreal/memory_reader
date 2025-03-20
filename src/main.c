@@ -91,7 +91,24 @@ void search_mem(size_t pid) {
                 type.value = malloc(sizeof(double));
                 scanf("%lf", type.value);        
             }                    
-        }        
+        } 
+        if (type.unknown && !first_run) {
+            printf("> or <");
+            scanf("%s", buffer);
+            if (strcmp(">", buffer) == 0) {
+                printf("Greater on\n");
+                type.greater = true;
+                type.lesser = false;
+            } else if (strcmp("<", buffer) == 0) {
+                printf("lesser on\n");
+                type.greater = false;
+                type.lesser = true;
+            } else {
+                printf("no change on\n");
+                type.greater = false;
+                type.lesser = false;
+            }            
+        }            
         all_addresses.count = read_maps(maps_fd, &address_pairs);
         all_addresses.address_pairs = address_pairs;
         SavedAddresses match_addresses;

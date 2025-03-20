@@ -29,7 +29,7 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
             for (size_t j = 0; j < size; ++j) {                                            
                 if (type.int32) {
                     int num;
-                    memcpy(&num, &memory_buffer[j], sizeof(int));
+                    memcpy(&num, &memory_buffer[j], sizeof(num));
                     int value = *(int*)type.value;                
                     if (num == value) {                    
                         printf("0x%08lx    ", j + start_address);                                            
@@ -42,7 +42,7 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
                     }
                 } else if (type.f32) {
                     double num;
-                    memcpy(&num, &memory_buffer[j], sizeof(double));
+                    memcpy(&num, &memory_buffer[j], sizeof(num));
                     double value = *(double*)type.value;                
                     if (num == value) {                    
                         printf("0x%08lx    ", j + start_address);                                            
@@ -68,8 +68,8 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
                             char buffer_num[sizeof(int) + 1];
                             buffer_num[sizeof(int)] = '\0';
                             int num;
-                            memcpy(&num, &memory_buffer[j], sizeof(int));
-                            memcpy(buffer_num, &memory_buffer[j], sizeof(int));
+                            memcpy(&num, &memory_buffer[j], sizeof(num));
+                            memcpy(buffer_num, &memory_buffer[j], sizeof(buffer_num));
                             if (address - start_address == j) {
                                 printf("----------------\n");
                             }
@@ -84,7 +84,7 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
                         }
                     } else {
                         int num;
-                        memcpy(&num, &memory_buffer[address - start_address], sizeof(int));
+                        memcpy(&num, &memory_buffer[address - start_address], sizeof(num));
                         printf("0x%08lx  |%d\n", address, num);
                     }                                       
                 } else if (type.f32) {
@@ -96,8 +96,8 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
                             char buffer_num[sizeof(double) + 1];
                             buffer_num[sizeof(double)] = '\0';
                             double num;
-                            memcpy(&num, &memory_buffer[j], sizeof(double));
-                            memcpy(buffer_num, &memory_buffer[j], sizeof(double));
+                            memcpy(&num, &memory_buffer[j], sizeof(num));
+                            memcpy(buffer_num, &memory_buffer[j], sizeof(buffer_num));
                             if (address - start_address == j) {
                                 printf("----------------\n");
                             }                            
@@ -112,7 +112,7 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
                         }
                     } else {
                         double num;
-                        memcpy(&num, &memory_buffer[address - start_address], sizeof(double)); 
+                        memcpy(&num, &memory_buffer[address - start_address], sizeof(num)); 
                         printf("0x%08lx    %lf\n", address, num);
                     }                    
                 }                
@@ -122,14 +122,20 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
             for (size_t j = 0; j < size; ++j) {
                 if (type.int32) {
                     int num;
-                    memcpy(&num, &memory_buffer[j], sizeof(int));
+                    memcpy(&num, &memory_buffer[j], sizeof(num));
                     (*saved_addresses).addresses = (Address *)realloc((*saved_addresses).addresses, sizeof(Address) * ((*saved_addresses).count + 1));
                     (*saved_addresses).addresses[(*saved_addresses).count].address = j + start_address;
                     (*saved_addresses).addresses[(*saved_addresses).count].value = malloc(sizeof(num));
                     memcpy((*saved_addresses).addresses[(*saved_addresses).count].value, &num, sizeof(num));
                     (*saved_addresses).count++;                                       
                 } else if (type.f32) {
-
+                    double num;
+                    memcpy(&num, &memory_buffer[j], sizeof(num));
+                    (*saved_addresses).addresses = (Address *)realloc((*saved_addresses).addresses, sizeof(Address) * ((*saved_addresses).count + 1));
+                    (*saved_addresses).addresses[(*saved_addresses).count].address = j + start_address;
+                    (*saved_addresses).addresses[(*saved_addresses).count].value = malloc(sizeof(num));
+                    memcpy((*saved_addresses).addresses[(*saved_addresses).count].value, &num, sizeof(num));
+                    (*saved_addresses).count++;
                 } else {
                     return;
                 }
@@ -150,7 +156,7 @@ void search_mem_all_repeat(char *mem_file_path, AllAddresses *addresses, SavedAd
                 if (old_addresses->addresses[j].address > start_address && old_addresses->addresses[j].address < end_address) { 
                     if (type.int32) {
                         int num;
-                        memcpy(&num, &memory_buffer[old_addresses->addresses[j].address - start_address], sizeof(int));
+                        memcpy(&num, &memory_buffer[old_addresses->addresses[j].address - start_address], sizeof(num));
                         int value = *(int*)type.value;                
                         if (num == value) {         
                             printf("0x%08lx    ", old_addresses->addresses[j].address);       
@@ -166,8 +172,8 @@ void search_mem_all_repeat(char *mem_file_path, AllAddresses *addresses, SavedAd
                         memcpy(&num, &memory_buffer[old_addresses->addresses[j].address - start_address], sizeof(double));
                         double value = *(double*)type.value;
                         if (num == value) {         
-                            printf("0x%08lx    ", old_addresses->addresses[j]);       
-                            printf("|%d\n", num);
+                            printf("0x%08lx    ", old_addresses->addresses[j].address);       
+                            printf("|%lf\n", num);
                             (*saved_addresses).addresses = (Address *)realloc((*saved_addresses).addresses, sizeof(Address) * ((*saved_addresses).count + 1));
                             (*saved_addresses).addresses[(*saved_addresses).count].address = old_addresses->addresses[j].address;
                             (*saved_addresses).addresses[(*saved_addresses).count].value = malloc(sizeof(num));
@@ -180,7 +186,59 @@ void search_mem_all_repeat(char *mem_file_path, AllAddresses *addresses, SavedAd
                 }            
             }            
         } else {
-
+            for (size_t j = 0; j < old_addresses->count; ++j) {
+                if (old_addresses->addresses[j].address > start_address && old_addresses->addresses[j].address < end_address) {
+                    if (type.int32) {
+                        int num;
+                        memcpy(&num, &memory_buffer[old_addresses->addresses[j].address - start_address], sizeof(num));
+                        if (type.greater) {
+                            if (num < *(int*)old_addresses->addresses[j].value) {
+                                continue;
+                            }
+                        } else if (type.lesser) {
+                            if (num > *(int*)old_addresses->addresses[j].value) {
+                                continue;
+                            }
+                        } else {
+                            if (num != *(int*)old_addresses->addresses[j].value) {
+                                continue;
+                            }
+                        }
+                        printf("0x%08lx    ", old_addresses->addresses[j].address);       
+                        printf("|%d\n", num);
+                        (*saved_addresses).addresses = (Address *)realloc((*saved_addresses).addresses, sizeof(Address) * ((*saved_addresses).count + 1));
+                        (*saved_addresses).addresses[(*saved_addresses).count].address = old_addresses->addresses[j].address;
+                        (*saved_addresses).addresses[(*saved_addresses).count].value = malloc(sizeof(num));
+                        memcpy((*saved_addresses).addresses[(*saved_addresses).count].value, &num, sizeof(num));
+                        (*saved_addresses).count++;                                       
+                    } else if (type.f32) {
+                        double num;
+                        memcpy(&num, &memory_buffer[old_addresses->addresses[j].address - start_address], sizeof(num));
+                        if (type.greater) {
+                            if (num < *(double*)old_addresses->addresses[j].value) {
+                                continue;
+                            }
+                        } else if (type.lesser) {
+                            if (num > *(double*)old_addresses->addresses[j].value) {
+                                continue;
+                            }
+                        } else {
+                            if (num != *(double*)old_addresses->addresses[j].value) {
+                                continue;
+                            }
+                        }
+                        printf("0x%08lx    ", old_addresses->addresses[j].address);       
+                        printf("|%lf\n", num);
+                        (*saved_addresses).addresses = (Address *)realloc((*saved_addresses).addresses, sizeof(Address) * ((*saved_addresses).count + 1));
+                        (*saved_addresses).addresses[(*saved_addresses).count].address = old_addresses->addresses[j].address;
+                        (*saved_addresses).addresses[(*saved_addresses).count].value = malloc(sizeof(num));
+                        memcpy((*saved_addresses).addresses[(*saved_addresses).count].value, &num, sizeof(num));
+                        (*saved_addresses).count++;
+                    } else {
+                        return;
+                    }
+                }                
+            }
         }
     }    
 }
