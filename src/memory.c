@@ -25,7 +25,7 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
         unsigned long end_address = addresses->address_pairs[i].end_address;
         size_t size = end_address - start_address;
         char *memory_buffer = read_file_at_index(mem_file_path, start_address, size);
-        if (!type.unsigned_long || type.unknown) {
+        if (!type.unsigned_long && !type.unknown) {
             for (size_t j = 0; j < size; ++j) {                                            
                 if (type.int32) {
                     int num;
@@ -36,9 +36,9 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
                         printf("|%d\n", num);
                         (*saved_addresses).addresses = (Address *)realloc((*saved_addresses).addresses, sizeof(Address) * ((*saved_addresses).count + 1));
                         (*saved_addresses).addresses[(*saved_addresses).count].address = j + start_address;
-                        (*saved_addresses).count++;
                         (*saved_addresses).addresses[(*saved_addresses).count].value = malloc(sizeof(num));
                         memcpy((*saved_addresses).addresses[(*saved_addresses).count].value, &num, sizeof(num));
+                        (*saved_addresses).count++;                        
                     }
                 } else if (type.f32) {
                     double num;
@@ -49,9 +49,9 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
                         printf("|%lf\n", num);
                         (*saved_addresses).addresses = (Address *)realloc((*saved_addresses).addresses, sizeof(Address) * ((*saved_addresses).count + 1));
                         (*saved_addresses).addresses[(*saved_addresses).count].address = j + start_address;
-                        (*saved_addresses).count++;
                         (*saved_addresses).addresses[(*saved_addresses).count].value = malloc(sizeof(num));
                         memcpy((*saved_addresses).addresses[(*saved_addresses).count].value, &num, sizeof(num));
+                        (*saved_addresses).count++;
                     }
                 }                
             }
@@ -118,17 +118,16 @@ void search_mem_all(char *mem_file_path, AllAddresses *addresses, SavedAddresses
                 }                
             }
         }
-        else if (type.unknown) {
-            printf("Hey :P\n", saved_addresses->count);
+        else if (type.unknown) {            
             for (size_t j = 0; j < size; ++j) {
                 if (type.int32) {
                     int num;
-                    memcpy(&num, &memory_buffer[j], sizeof(int));                    
+                    memcpy(&num, &memory_buffer[j], sizeof(int));
                     (*saved_addresses).addresses = (Address *)realloc((*saved_addresses).addresses, sizeof(Address) * ((*saved_addresses).count + 1));
                     (*saved_addresses).addresses[(*saved_addresses).count].address = j + start_address;
-                    (*saved_addresses).count++;
                     (*saved_addresses).addresses[(*saved_addresses).count].value = malloc(sizeof(num));
-                    memcpy((*saved_addresses).addresses[(*saved_addresses).count].value, &num, sizeof(num));                    
+                    memcpy((*saved_addresses).addresses[(*saved_addresses).count].value, &num, sizeof(num));
+                    (*saved_addresses).count++;                                       
                 } else if (type.f32) {
 
                 } else {
@@ -146,38 +145,42 @@ void search_mem_all_repeat(char *mem_file_path, AllAddresses *addresses, SavedAd
         unsigned long end_address = addresses->address_pairs[i].end_address;
         size_t size = end_address - start_address;
         char *memory_buffer = read_file_at_index(mem_file_path, start_address, size);
-        for (size_t j = 0; j < old_addresses->count; ++j) {
-            if (old_addresses->addresses[j].address > start_address && old_addresses->addresses[j].address < end_address) { 
-                if (type.int32) {
-                    int num;
-                    memcpy(&num, &memory_buffer[old_addresses->addresses[j].address - start_address], sizeof(int));
-                    int value = *(int*)type.value;                
-                    if (num == value) {         
-                        printf("0x%08lx    ", old_addresses->addresses[j].address);       
-                        printf("|%d\n", num);
-                        (*saved_addresses).addresses = (Address *)realloc((*saved_addresses).addresses, sizeof(Address) * ((*saved_addresses).count + 1));
-                        (*saved_addresses).addresses[(*saved_addresses).count].address = old_addresses->addresses[j].address;
-                        (*saved_addresses).count++;
-                        (*saved_addresses).addresses[(*saved_addresses).count].value = malloc(sizeof(num));
-                        memcpy((*saved_addresses).addresses[(*saved_addresses).count].value, &num, sizeof(num));
+        if (!type.unknown) {
+            for (size_t j = 0; j < old_addresses->count; ++j) {
+                if (old_addresses->addresses[j].address > start_address && old_addresses->addresses[j].address < end_address) { 
+                    if (type.int32) {
+                        int num;
+                        memcpy(&num, &memory_buffer[old_addresses->addresses[j].address - start_address], sizeof(int));
+                        int value = *(int*)type.value;                
+                        if (num == value) {         
+                            printf("0x%08lx    ", old_addresses->addresses[j].address);       
+                            printf("|%d\n", num);
+                            (*saved_addresses).addresses = (Address *)realloc((*saved_addresses).addresses, sizeof(Address) * ((*saved_addresses).count + 1));
+                            (*saved_addresses).addresses[(*saved_addresses).count].address = old_addresses->addresses[j].address;
+                            (*saved_addresses).addresses[(*saved_addresses).count].value = malloc(sizeof(num));
+                            memcpy((*saved_addresses).addresses[(*saved_addresses).count].value, &num, sizeof(num));
+                            (*saved_addresses).count++;
+                        }
+                    } else if (type.f32) {
+                        double num;
+                        memcpy(&num, &memory_buffer[old_addresses->addresses[j].address - start_address], sizeof(double));
+                        double value = *(double*)type.value;
+                        if (num == value) {         
+                            printf("0x%08lx    ", old_addresses->addresses[j]);       
+                            printf("|%d\n", num);
+                            (*saved_addresses).addresses = (Address *)realloc((*saved_addresses).addresses, sizeof(Address) * ((*saved_addresses).count + 1));
+                            (*saved_addresses).addresses[(*saved_addresses).count].address = old_addresses->addresses[j].address;
+                            (*saved_addresses).addresses[(*saved_addresses).count].value = malloc(sizeof(num));
+                            memcpy((*saved_addresses).addresses[(*saved_addresses).count].value, &num, sizeof(num));
+                            (*saved_addresses).count++;
+                        }                    
                     }
-                } else if (type.f32) {
-                    double num;
-                    memcpy(&num, &memory_buffer[old_addresses->addresses[j].address - start_address], sizeof(double));
-                    double value = *(double*)type.value;
-                    if (num == value) {         
-                        printf("0x%08lx    ", old_addresses->addresses[j]);       
-                        printf("|%d\n", num);
-                        (*saved_addresses).addresses = (Address *)realloc((*saved_addresses).addresses, sizeof(Address) * ((*saved_addresses).count + 1));
-                        (*saved_addresses).addresses[(*saved_addresses).count].address = old_addresses->addresses[j].address;
-                        (*saved_addresses).count++;
-                        (*saved_addresses).addresses[(*saved_addresses).count].value = malloc(sizeof(num));
-                        memcpy((*saved_addresses).addresses[(*saved_addresses).count].value, &num, sizeof(num));
-                    }                    
-                }
-            } else {
-                continue;
+                } else {
+                    continue;
+                }            
             }            
+        } else {
+
         }
     }    
 }

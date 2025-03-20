@@ -18,8 +18,8 @@ int main() {
     size_t pid = find_pid(process_name);
     printf("Found PID -> %zu\n", pid);
     while (true) {
-        search_mem(pid);            
-    }    
+        search_mem(pid);                    
+    }        
     return 0;
 }
 
@@ -43,10 +43,14 @@ SavedAddresses saved_addresses;
 
 void search_mem(size_t pid) {
     bool first_run = true;
+    Type type;                
     while (true) {
-        char buffer[10];
-        Type type;
-        if (first_run) {                        
+        char buffer[10];        
+        if (first_run) {
+            type.unsigned_long = false;
+            type.int32 = false;
+            type.f32 = false;
+            type.unknown = false;
             printf("Do you want to search for an address or value? ");
             scanf("%s", buffer);
             if (strcmp(buffer, "address") == 0) {
@@ -65,29 +69,29 @@ void search_mem(size_t pid) {
                 printf("f32 on\n");
                 type.f32 = true;                                 
             }
-        }
-        memset(buffer, 0, sizeof(buffer));
+            memset(buffer, 0, sizeof(buffer));
+            printf("Do you know the value?(yes/no): ");
+            scanf("%s", buffer);
+            if (strcmp(buffer, "no") == 0) {
+                printf("unknown on\n");
+                type.unknown = true;
+            }
+            memset(buffer, 0, sizeof(buffer));
+        }        
         AllAddresses all_addresses;
         AddressPair *address_pairs = NULL;
         FILE *maps_fd;
         setup_files(&maps_fd, pid);        
-        if (!type.unsigned_long) {            
-            printf("Do you know the value?(yes/no): ");
-            scanf("%s", buffer);
-            if (strcmp(buffer, "yes") == 0) {
-                printf("What value do you wish to search for?: ");
-                if (type.int32) {
-                    type.value = malloc(sizeof(int));
-                    scanf("%d", type.value);                    
-                } else if (type.f32) {            
-                    type.value = malloc(sizeof(double));
-                    scanf("%lf", type.value);        
-                }
-            } else {
-                type.unknown = true;
-            }            
-        }
-        memset(buffer, 0, sizeof(buffer));
+        if (!type.unsigned_long && !type.unknown) {                        
+            printf("What value do you wish to search for?: ");
+            if (type.int32) {
+                type.value = malloc(sizeof(int));
+                scanf("%d", type.value);                    
+            } else if (type.f32) {            
+                type.value = malloc(sizeof(double));
+                scanf("%lf", type.value);        
+            }                    
+        }        
         all_addresses.count = read_maps(maps_fd, &address_pairs);
         all_addresses.address_pairs = address_pairs;
         SavedAddresses match_addresses;
@@ -97,7 +101,7 @@ void search_mem(size_t pid) {
         sprintf(mem_file_path, "/proc/%zu/mem", pid);                
         if (first_run) {            
             search_mem_all(mem_file_path, &all_addresses, &match_addresses, type);
-            first_run = false;
+            first_run = false;            
             if (type.unsigned_long) {
                 return;
             }
