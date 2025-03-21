@@ -51,6 +51,9 @@ void search_mem(size_t pid) {
             type.int32 = false;
             type.f32 = false;
             type.unknown = false;
+            type.string = false;
+            type.greater = false;
+            type.lesser = false;            
             printf("Do you want to search for an address or value? ");
             scanf("%s", buffer);
             if (strcmp(buffer, "address") == 0) {
@@ -60,7 +63,7 @@ void search_mem(size_t pid) {
                 scanf("%08lx", type.value);                
             }
             memset(buffer, 0, sizeof(buffer));
-            printf("What do you want to search for?(int32, f32): ");
+            printf("What do you want to search for?(int32, f32, string): ");
             scanf("%s", buffer);
             if (strcmp(buffer, "int32") == 0) {
                 printf("int32 on\n");
@@ -68,6 +71,9 @@ void search_mem(size_t pid) {
             } else if (strcmp(buffer, "f32") == 0) {
                 printf("f32 on\n");
                 type.f32 = true;                                 
+            } else if (strcmp(buffer, "string") == 0) {
+                printf("string on\n");
+                type.string = true;
             }
             memset(buffer, 0, sizeof(buffer));
             printf("Do you know the value?(yes/no): ");
@@ -90,7 +96,12 @@ void search_mem(size_t pid) {
             } else if (type.f32) {            
                 type.value = malloc(sizeof(double));
                 scanf("%lf", type.value);        
-            }                    
+            } else if (type.string) {
+                scanf("%s", buffer);
+                type.value = malloc(strlen(buffer) + 1);
+                memcpy(type.value, buffer, strlen(buffer));
+            }
+            memset(buffer, 0, sizeof(buffer));
         } 
         if (type.unknown && !first_run) {
             printf("> or <");

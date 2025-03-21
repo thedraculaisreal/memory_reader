@@ -16,6 +16,7 @@ typedef struct {
     bool unknown;
     bool lesser;
     bool greater;
+    bool string;
     void *value;
 } Type;
 
